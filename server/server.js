@@ -1,7 +1,7 @@
 const { BallChasingAPI } = require("ballchasing");
 const express = require("express");
 const { getEnvValue, setEnvValue } = require("./apiKeyManager");
-const loadPlayers = require("./loadPlayers");
+const { loadPlayers } = require("./loadPlayers");
 
 const PORT = process.env.PORT || 3001;
 
@@ -36,6 +36,10 @@ app.get("/api", async (req, res) => {
 app.get("/apiKey", async (req, res) => {
     const apiKey = getEnvValue("apiKey")
     res.json(apiKey);
+});
+
+app.get("/players", async (req, res) => {
+    res.json(players);
 });
 
 app.get("/search", async (req, res) => {
@@ -80,7 +84,7 @@ const setup = () => {
     }
 
     // load players list
-    players = loadPlayers;
+    players = loadPlayers();
 }
 
 app.listen(PORT, () => {

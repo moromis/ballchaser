@@ -1,5 +1,6 @@
-import { Button, FormGroup, InputGroup, Intent, NonIdealState, Spinner, Switch } from "@blueprintjs/core";
+import { Button, FormGroup, InputGroup, Intent, NonIdealState, Spinner, Switch, Tag } from "@blueprintjs/core";
 import { Search } from "@blueprintjs/icons";
+import { difference, union, without } from "lodash";
 import React, { useCallback, useEffect, useState } from 'react';
 import './App.css';
 import Results from './Results';
@@ -9,9 +10,26 @@ function App() {
   const [workingApiKey, setWorkingApiKey] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [playerName, setPlayerName] = useState("");
+  const [players, setPlayers] = useState(null);
   const [pro, setPro] = useState(false);
+  const [selectedPlayers, setSelectedPlayers] = useState(null);
+  const [selectedRanks, setSelectedRanks] = useState(null);
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState(null);
+
+  useEffect(() => {
+    fetch("/players")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("asked server for players, got", data)
+        if (data) {
+          const { players } = data;
+          setPlayers(players || null);
+          setSelectedPlayers(players ? Object.values(players).map((rank) => Object.keys(rank)).flat() : null);
+          setSelectedRanks(players ? Object.keys(players) : null)
+        }
+      });
+  }, [])
 
   useEffect(() => {
     fetch("/apiKey")
@@ -83,6 +101,40 @@ function App() {
     e.preventDefault();
   }
 
+  const getPlayerTagIntent = (name) => {
+    if (selectedPlayers && selectedPlayers.length) {
+      return selectedPlayers.indexOf(name) !== -1 ? Intent.SUCCESS : Intent.NONE
+    }
+  }
+
+  const getRankIntent = (rank) => {
+    if (selectedRanks && selectedRanks.length) {
+      return selectedRanks.indexOf(rank) !== -1 ? Intent.PRIMARY : Intent.DANGER
+    }
+  }
+
+  const handlePlayerTagClick = (name) => {
+    if (selectedPlayers && selectedPlayers.length) {
+      if (selectedPlayers.indexOf(name) === -1) {
+        setSelectedPlayers((players) => [...players, name])
+      } else {
+        setSelectedPlayers((players) => without(players, name))
+      }
+    }
+  }
+
+  const handleRankClick = (rank) => {
+    if (selectedRanks && selectedRanks.length) {
+      if (selectedRanks.indexOf(rank) === -1) {
+        setSelectedRanks((ranks) => [...ranks, rank])
+        setSelectedPlayers((selectedPlayers) => union(selectedPlayers, Object.keys(players[rank])))
+      } else {
+        setSelectedRanks((ranks) => without(ranks, rank))
+        setSelectedPlayers((selectedPlayers) => difference(selectedPlayers, Object.keys(players[rank])))
+      }
+    }
+  }
+
   return (
     <div className="bp5-dark">
       <div className="App">
@@ -100,6 +152,19 @@ function App() {
         )}
         {apiKey.length ? (
           <>
+            <FormGroup
+              label="Players to find games from"
+              labelFor="players"
+            >
+              {Object.keys(players).map((rank) => (
+                <div key={rank}>
+                  <Button intent={getRankIntent(rank)} className="rank-button" onClick={() => handleRankClick(rank)}>Rank {rank}</Button>
+                  {Object.keys(players[rank]).map((name) => <Button className="player-tag-button" key={name} onClick={() => handlePlayerTagClick(name)}>
+                    <Tag intent={getPlayerTagIntent(name)}>{name}</Tag>
+                  </Button>)}
+                </div>
+              ))}
+            </FormGroup>
             <FormGroup
               label="Player Name"
               labelFor="player-name"

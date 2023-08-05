@@ -8,3 +8,14 @@
   min-height: 100vh;
   color: white;
 }
+
+.player-tag-button {
+  margin: 2px;
+  padding: 0px;
+  min-height: 0;
+}
+
+.rank-button {
+  display: flex;
+  margin: 8px 0px;
+}
