@@ -1,5 +1,6 @@
+import { Button, FormGroup, InputGroup, Intent, NonIdealState, Spinner, Switch } from "@blueprintjs/core";
+import { Search } from "@blueprintjs/icons";
 import React, { useCallback, useEffect, useState } from 'react';
-import ContentLoader from 'react-content-loader';
 import './App.css';
 import Results from './Results';
 
@@ -83,8 +84,8 @@ function App() {
   }
 
   return (
-    <div className="App">
-      <header className="App-header">
+    <div className="bp5-dark">
+      <div className="App">
         {!apiKey.length && (
           <form onSubmit={handleApiKeySubmit}>
             <div>
@@ -98,30 +99,33 @@ function App() {
           </form>
         )}
         {apiKey.length ? (
-          <form onSubmit={handleSearch}>
+          <>
+            <FormGroup
+              label="Player Name"
+              labelFor="player-name"
+            >
+              <InputGroup value={playerName} onChange={handlePlayerNameChange} id="player-name" />
+            </FormGroup>
+            <FormGroup
+              label="Only show games with pros in them?"
+              labelFor="pro"
+            >
+              <Switch onChange={handleProChange} checked={pro} id="pro" />
+            </FormGroup>
             <div>
-              <label>Player Name
-                <input type="text" value={playerName} onChange={handlePlayerNameChange} />
-              </label>
-            </div>
-            <div>
-              <label>Pro
-                <input type="checkbox" onChange={handleProChange} checked={pro}></input>
-              </label>
-            </div>
-            <div>
-              <input type="submit" value="Search" />
+              <Button intent={Intent.SUCCESS} onClick={handleSearch}>Search</Button>
             </div>
             {searching ? (
-              <ContentLoader>
-                <rect x="80" y="40" rx="3" ry="3" width="250" height="10" />
-                <rect x="80" y="40" rx="3" ry="3" width="250" height="10" />
-                <rect x="80" y="40" rx="3" ry="3" width="250" height="10" />
-              </ContentLoader>
-            ) : (results ? <Results results={results} /> : <p>No Results</p>)}
-          </form>
+              <Spinner />
+            ) : (results ? <Results results={results} /> : (
+              <NonIdealState
+                icon={<Search />}
+                title="No search results"
+              />
+            ))}
+          </>
         ) : null}
-      </header>
+      </div>
     </div>
   );
 }
