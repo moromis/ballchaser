@@ -1,5 +1,6 @@
 import {
   Button,
+  Classes,
   FormGroup,
   InputGroup,
   Intent,
@@ -8,11 +9,14 @@ import {
   Switch,
   Tag,
 } from "@blueprintjs/core";
+import { DateRangePicker } from "@blueprintjs/datetime";
 import { Search } from "@blueprintjs/icons";
+import { addDays, format, subDays } from "date-fns";
 import { differenceBy, unionBy, without } from "lodash";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import Results from "./Results";
+import { RFC339_DATE_FORMAT } from "./const";
 
 function App() {
   const [waitTime, setWaitTime] = useState(600);
@@ -24,6 +28,10 @@ function App() {
   const [selectedRanks, setSelectedRanks] = useState(null);
   const searching = useRef(false);
   const [results, setResults] = useState(null);
+  const [dateRange, setDateRange] = useState([
+    format(new Date(), RFC339_DATE_FORMAT),
+    format(subDays(new Date(), 1), RFC339_DATE_FORMAT),
+  ]);
 
   const searchFetchAbortController = new AbortController();
   const { abortSearchSignal } = searchFetchAbortController;
@@ -103,22 +111,24 @@ function App() {
     searchFetchAbortController.abort();
   };
 
-  const search = useCallback(() => {
+  const search = useCallback(async () => {
     searching.current = true;
     setResults([]);
+    // reset hashed replay IDs (for deduplication)
+    await fetch("/resetIds");
     selectedPlayers
       .map((p) => p.id)
-      .forEach(async (playerId, i) => {
+      .forEach((playerId, i) => {
         const params = {
           headers: {
             Authorization: apiKey,
           },
           pro,
           playerId,
+          createdAfter: dateRange[0],
+          createdBefore: dateRange[1] === null ? dateRange[0] : dateRange[1],
         };
         const queryString = new URLSearchParams(params).toString();
-        // reset hashed replay IDs (for deduplication)
-        await fetch("/resetIds");
         setTimeout(() => {
           if (searching.current) {
             fetch(`/search?${queryString}`, {
@@ -134,7 +144,7 @@ function App() {
           }
         }, 600 * i);
       });
-  }, [abortSearchSignal, apiKey, pro, selectedPlayers]);
+  }, [abortSearchSignal, apiKey, dateRange, pro, selectedPlayers]);
 
   const getPlayerTagIntent = (id) => {
     if (selectedPlayers && selectedPlayers.length) {
@@ -150,6 +160,18 @@ function App() {
         ? Intent.PRIMARY
         : Intent.DANGER;
     }
+  };
+
+  const handleDateRangeChange = (dateRange) => {
+    const formattedDates = dateRange.map((d, i) => {
+      if (d !== null && i === 1) {
+        return format(new Date(addDays(new Date(d), 1)), RFC339_DATE_FORMAT);
+      } else if (d !== null) {
+        return format(new Date(d), RFC339_DATE_FORMAT);
+      }
+      return d;
+    });
+    setDateRange(formattedDates);
   };
 
   const handlePlayerTagClick = (player) => {
@@ -215,6 +237,14 @@ function App() {
                 onChange={changeWaitTime}
                 id="wait-time"
                 min={600}
+              />
+            </FormGroup>
+            <FormGroup label="Date range" labelFor="date-range">
+              <DateRangePicker
+                id="date-range"
+                className={Classes.ELEVATION_1}
+                allowSingleDayRange={true}
+                onChange={handleDateRangeChange}
               />
             </FormGroup>
             <FormGroup label="Players to find games from" labelFor="players">

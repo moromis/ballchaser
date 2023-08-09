@@ -52,8 +52,6 @@ async function search(req, res) {
     // https://ballchasing.com/doc/api#replays-replays-get
     const { data } = await bc.listReplays({
       ...params,
-      createdAfter: "2023-07-28T00:00:00-05:00", // TODO: receive this from frontend
-      createdBefore: "2023-07-29T00:00:00-05:00", // TODO: receive this from frontend
       sortBy: "replay-date", // TODO: receive this from frontend
       sortDir: "asc", // TODO: receive this from frontend
     });
