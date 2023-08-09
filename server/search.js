@@ -46,8 +46,6 @@ async function search(req, res) {
     await setupBallChasingApiClient(req);
   }
   if (bc) {
-    // get replays by player "noot" from Jan 1 2020 to Jan 1 2021 on map "park_p"
-    // sorted ascending by the date of the replay
     const params = req.query;
     // https://ballchasing.com/doc/api#replays-replays-get
     const { data } = await bc.listReplays({
@@ -55,6 +53,7 @@ async function search(req, res) {
       sortBy: "replay-date", // TODO: receive this from frontend
       sortDir: "asc", // TODO: receive this from frontend
     });
+    console.log(data);
     let filteredData = [];
     if (data.list && data.list.length) {
       filteredData = data.list.filter((replay) => {
@@ -72,6 +71,7 @@ async function search(req, res) {
     }
     res.json({ data: filteredData, ok: true });
   } else {
+    console.log("no good?");
     res.json({
       data: "Did you pass an authorization token in the request?",
       ok: false,

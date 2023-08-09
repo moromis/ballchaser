@@ -1,3 +1,5 @@
+// TODO: write tests
+
 import {
   Button,
   Classes,
@@ -19,6 +21,7 @@ import Results from "./Results";
 import { RFC339_DATE_FORMAT } from "./const";
 
 function App() {
+  const waitingFetches = useRef([]);
   const [waitTime, setWaitTime] = useState(600);
   const [workingApiKey, setWorkingApiKey] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -29,8 +32,8 @@ function App() {
   const searching = useRef(false);
   const [results, setResults] = useState(null);
   const [dateRange, setDateRange] = useState([
-    format(new Date(), RFC339_DATE_FORMAT),
-    format(subDays(new Date(), 1), RFC339_DATE_FORMAT),
+    new Date(),
+    subDays(new Date(), 1),
   ]);
 
   const searchFetchAbortController = new AbortController();
@@ -40,7 +43,6 @@ function App() {
     fetch("/players")
       .then((res) => res.json())
       .then((data) => {
-        console.log("asked server for players, got", data);
         if (data) {
           const { players } = data;
           setPlayers(players || null);
@@ -62,14 +64,12 @@ function App() {
     fetch("/apiKey")
       .then((res) => res.json())
       .then((data) => {
-        console.log("asked server for api key, got", data);
         setApiKey(data || "");
       });
   }, [setApiKey]);
 
   const pushApiKeyToServer = useCallback(() => {
     if (apiKey.length > 0) {
-      console.log("fetching...");
       fetch("/api", {
         headers: {
           Authorization: apiKey,
@@ -109,6 +109,8 @@ function App() {
   const stopSearch = () => {
     searching.current = false;
     searchFetchAbortController.abort();
+    waitingFetches.current.forEach((f) => clearTimeout(f));
+    waitingFetches.current = [];
   };
 
   const search = useCallback(async () => {
@@ -125,11 +127,14 @@ function App() {
           },
           pro,
           playerId,
-          createdAfter: dateRange[0],
-          createdBefore: dateRange[1] === null ? dateRange[0] : dateRange[1],
+          createdAfter: format(dateRange[0], RFC339_DATE_FORMAT),
+          createdBefore: format(
+            dateRange[1] === null ? dateRange[0] : dateRange[1],
+            RFC339_DATE_FORMAT
+          ),
         };
         const queryString = new URLSearchParams(params).toString();
-        setTimeout(() => {
+        const newFetch = setTimeout(() => {
           if (searching.current) {
             fetch(`/search?${queryString}`, {
               signal: abortSearchSignal,
@@ -142,9 +147,18 @@ function App() {
                 setResults((oldList) => unionBy(oldList, data, "id"));
               });
           }
-        }, 600 * i);
+        }, waitTime * i);
+        waitingFetches.current.push(newFetch);
       });
-  }, [abortSearchSignal, apiKey, dateRange, pro, selectedPlayers]);
+  }, [
+    abortSearchSignal,
+    apiKey,
+    dateRange,
+    pro,
+    selectedPlayers,
+    waitTime,
+    waitingFetches,
+  ]);
 
   const getPlayerTagIntent = (id) => {
     if (selectedPlayers && selectedPlayers.length) {
@@ -165,9 +179,9 @@ function App() {
   const handleDateRangeChange = (dateRange) => {
     const formattedDates = dateRange.map((d, i) => {
       if (d !== null && i === 1) {
-        return format(new Date(addDays(new Date(d), 1)), RFC339_DATE_FORMAT);
+        return new Date(addDays(new Date(d), 1));
       } else if (d !== null) {
-        return format(new Date(d), RFC339_DATE_FORMAT);
+        return new Date(d);
       }
       return d;
     });
@@ -245,6 +259,7 @@ function App() {
                 className={Classes.ELEVATION_1}
                 allowSingleDayRange={true}
                 onChange={handleDateRangeChange}
+                value={dateRange}
               />
             </FormGroup>
             <FormGroup label="Players to find games from" labelFor="players">
