@@ -89,7 +89,7 @@ function App() {
   const search = useCallback(() => {
     searching.current = true;
     setResults([])
-    selectedPlayers.map((p) => p.id).forEach((playerId, i) => {
+    selectedPlayers.map((p) => p.id).forEach(async (playerId, i) => {
       const params = {
         headers: {
           "Authorization": apiKey,
@@ -98,6 +98,8 @@ function App() {
         playerId
       }
       const queryString = new URLSearchParams(params).toString()
+      // reset hashed replay IDs (for deduplication)
+      await fetch("/resetIds")
       setTimeout(() => {
         if (searching.current) {
           fetch(`/search?${queryString}`, {
@@ -107,9 +109,8 @@ function App() {
             }
           })
             .then((res) => res.json())
-            .then((data) => {
-              const replayList = data?.data?.list
-              setResults((oldList) => unionBy(oldList, replayList, 'id'))
+            .then(({ data, ok }) => {
+              setResults((oldList) => unionBy(oldList, data, 'id'))
             });
         }
       }, 600 * i)

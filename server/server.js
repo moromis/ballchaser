@@ -2,7 +2,7 @@
 const express = require("express");
 const { getEnvValue, setEnvValue } = require("./apiKeyManager");
 const path = require('path');
-const { search, setup, setupBallChasingApiClient } = require("./search");
+const { search, setup, setupBallChasingApiClient, resetIds } = require("./search");
 
 const PORT = process.env.PORT || 3001;
 
@@ -29,6 +29,11 @@ app.get("/players", async (req, res) => {
 
 app.get("/search", async (req, res) => {
     await search(req, res);
+});
+
+app.get("/resetIds", async (req, res) => {
+    resetIds();
+    res.json({ ok: true })
 });
 
 app.get('*', (req, res) => {

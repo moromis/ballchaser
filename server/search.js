@@ -3,6 +3,11 @@ const { getEnvValue } = require("./apiKeyManager");
 const { loadPlayers } = require("./loadPlayers");
 
 let bc = null;
+const seenReplayIds = new Set(); // TODO: read and write to file to store between sessions
+
+const resetIds = () => {
+    seenReplayIds.clear()
+}
 
 const setupBallChasingApiClient = async (req) => {
     if (req.headers.authorization && !bc) {
@@ -45,19 +50,29 @@ async function search(req, res) {
         // sorted ascending by the date of the replay
         const params = req.query;
         // https://ballchasing.com/doc/api#replays-replays-get
-        const replaysResponse = await bc.listReplays({
+        const { data } = await bc.listReplays({
             ...params,
-            createdAfter: "2023-07-28T00:00:00-05:00",
-            createdBefore: "2024-08-05T00:00:00-05:00",
-            sortBy: "replay-date",
-            sortDir: "asc",
+            createdAfter: "2023-07-28T00:00:00-05:00", // TODO: receive this from frontend
+            createdBefore: "2023-07-29T00:00:00-05:00", // TODO: receive this from frontend
+            sortBy: "replay-date", // TODO: receive this from frontend
+            sortDir: "asc", // TODO: receive this from frontend
         });
-        res.json({ ...replaysResponse, ok: true });
+        let filteredData = [];
+        if (data.list && data.list.length) {
+            filteredData = data.list.filter((replay) => {
+                if (seenReplayIds.has(replay.id) || replay.duration < 30 || replay.map_code === "labs_utopia_p" || replay.blue.players.length + replay.orange.players.length > 4) {
+                    return false;
+                }
+                seenReplayIds.add(replay.id)
+                return true;
+            })
+        }
+        res.json({ data: filteredData, ok: true });
     } else {
         res.json({ data: "Did you pass an authorization token in the request?", ok: false });
     }
 }
 
 module.exports = {
-    search, setup, setupBallChasingApiClient
+    search, setup, setupBallChasingApiClient, resetIds
 }
