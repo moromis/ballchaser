@@ -18,11 +18,12 @@ import { differenceBy, unionBy, without } from "lodash";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import Results from "./Results";
-import { RFC339_DATE_FORMAT } from "./const";
+import { MINIMUM_SEARCH_INTERVAL, RFC339_DATE_FORMAT } from "./const";
 
 function App() {
   const waitingFetches = useRef([]);
-  const [waitTime, setWaitTime] = useState(600);
+  const [errorText, setErrorText] = useState(null);
+  const [waitTime, setWaitTime] = useState(MINIMUM_SEARCH_INTERVAL);
   const [workingApiKey, setWorkingApiKey] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [players, setPlayers] = useState(null);
@@ -50,7 +51,10 @@ function App() {
             players
               ? Object.values(players)
                   .map((rank) =>
-                    Object.entries(rank).map(([name, id]) => ({ name, id }))
+                    Object.entries(rank).map(([name, id]) => ({
+                      name,
+                      id,
+                    }))
                   )
                   .flat()
               : null
@@ -147,7 +151,7 @@ function App() {
                 setResults((oldList) => unionBy(oldList, data, "id"));
               });
           }
-        }, waitTime * i);
+        }, Math.max(waitTime, MINIMUM_SEARCH_INTERVAL) * i);
         waitingFetches.current.push(newFetch);
       });
   }, [
@@ -174,6 +178,7 @@ function App() {
         ? Intent.PRIMARY
         : Intent.DANGER;
     }
+    return Intent.DANGER;
   };
 
   const handleDateRangeChange = (dateRange) => {
@@ -191,30 +196,51 @@ function App() {
   const handlePlayerTagClick = (player) => {
     if (selectedPlayers && selectedPlayers.length) {
       if (selectedPlayers.find((p) => p.id === player.id)) {
-        setSelectedPlayers((players) => differenceBy(players, [player], "id"));
+        const newSelectedPlayers = differenceBy(players, [player], "id");
+        setSelectedPlayers((players) => newSelectedPlayers);
+        if (!newSelectedPlayers.length) {
+          setSelectedRanks([]);
+          setErrorText("No players selected");
+        }
       } else {
         setSelectedPlayers((players) => unionBy(players, [player], "id"));
+        setErrorText(null);
       }
+    } else {
+      setSelectedRanks([
+        Object.keys(players).find((rank) => player.name in players[rank]),
+      ]);
+      setSelectedPlayers([player]);
+      setErrorText(null);
     }
   };
 
   const handleRankClick = (rank) => {
+    const rankPlayers = Object.entries(players[rank]).map(([name, id]) => ({
+      name,
+      id,
+    }));
     if (selectedRanks && selectedRanks.length) {
-      const rankPlayers = Object.entries(players[rank]).map(([name, id]) => ({
-        name,
-        id,
-      }));
       if (selectedRanks.indexOf(rank) === -1) {
         setSelectedRanks((ranks) => [...ranks, rank]);
         setSelectedPlayers((selectedPlayers) =>
           unionBy(selectedPlayers, rankPlayers, "id")
         );
+        setErrorText(null);
       } else {
-        setSelectedRanks((ranks) => without(ranks, rank));
+        const newSelectedRanks = without(selectedRanks, rank);
+        setSelectedRanks(newSelectedRanks);
         setSelectedPlayers((selectedPlayers) =>
           differenceBy(selectedPlayers, rankPlayers, "id")
         );
+        if (!newSelectedRanks.length) {
+          setErrorText("No players selected");
+        }
       }
+    } else {
+      setSelectedRanks([rank]);
+      setSelectedPlayers(rankPlayers);
+      setErrorText(null);
     }
   };
 
@@ -241,8 +267,12 @@ function App() {
         {apiKey.length ? (
           <>
             <FormGroup
-              label="Wait time between API calls (600ms minimum)"
-              helperText={waitTime < 600 ? "600ms minimum" : null}
+              label={`Wait time between API calls (${MINIMUM_SEARCH_INTERVAL}ms minimum)`}
+              helperText={
+                waitTime < MINIMUM_SEARCH_INTERVAL
+                  ? `${MINIMUM_SEARCH_INTERVAL}ms minimum`
+                  : null
+              }
               labelFor="wait-time"
               intent={Intent.DANGER}
             >
@@ -250,7 +280,6 @@ function App() {
                 value={waitTime}
                 onChange={changeWaitTime}
                 id="wait-time"
-                min={600}
               />
             </FormGroup>
             <FormGroup label="Date range" labelFor="date-range">
@@ -263,26 +292,30 @@ function App() {
               />
             </FormGroup>
             <FormGroup label="Players to find games from" labelFor="players">
-              {Object.keys(players).map((rank) => (
-                <div key={rank}>
-                  <Button
-                    intent={getRankIntent(rank)}
-                    className="rank-button"
-                    onClick={() => handleRankClick(rank)}
-                  >
-                    Rank {rank}
-                  </Button>
-                  {Object.entries(players[rank]).map(([name, id]) => (
+              {players !== null ? (
+                Object.keys(players).map((rank) => (
+                  <div key={rank}>
                     <Button
-                      className="player-tag-button"
-                      key={id}
-                      onClick={() => handlePlayerTagClick({ name, id })}
+                      intent={getRankIntent(rank)}
+                      className="rank-button"
+                      onClick={() => handleRankClick(rank)}
                     >
-                      <Tag intent={getPlayerTagIntent(id)}>{name}</Tag>
+                      Rank {rank}
                     </Button>
-                  ))}
-                </div>
-              ))}
+                    {Object.entries(players[rank]).map(([name, id]) => (
+                      <Button
+                        className="player-tag-button"
+                        key={id}
+                        onClick={() => handlePlayerTagClick({ name, id })}
+                      >
+                        <Tag intent={getPlayerTagIntent(id)}>{name}</Tag>
+                      </Button>
+                    ))}
+                  </div>
+                ))
+              ) : (
+                <Spinner />
+              )}
             </FormGroup>
             <FormGroup
               label="Only show games with pros in them?"
@@ -292,9 +325,20 @@ function App() {
             </FormGroup>
             <div>
               {!searching.current ? (
-                <Button intent={Intent.SUCCESS} onClick={search}>
-                  Search
-                </Button>
+                <FormGroup
+                  helperText={errorText}
+                  labelFor="search-button"
+                  intent={Intent.DANGER}
+                >
+                  <Button
+                    disabled={errorText !== null}
+                    id="search-button"
+                    intent={errorText === null ? Intent.SUCCESS : Intent.NONE}
+                    onClick={search}
+                  >
+                    Search
+                  </Button>
+                </FormGroup>
               ) : (
                 <Button intent={Intent.DANGER} onClick={stopSearch}>
                   Stop Searching

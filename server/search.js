@@ -65,6 +65,7 @@ async function search(req, res) {
         ) {
           return false;
         }
+        // TODO: this actually isn't good enough, need to hash match details and check. Players + datetime?
         seenReplayIds.add(replay.id);
         return true;
       });
