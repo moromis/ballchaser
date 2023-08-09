@@ -13,8 +13,8 @@ const formatTitle = (r) => {
 
 const Results = ({ results }) => {
   return Object.entries(results).map(([playerName, playerResults]) => (
-    <div>
-      <h2 key={playerName}>{playerName}</h2>
+    <div key={playerName}>
+      <h2>{playerName}</h2>
       {playerResults && playerResults.length ? (
         <ol>
           {playerResults.map((r) => (
