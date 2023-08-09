@@ -1,13 +1,21 @@
-import { Button, FormGroup, InputGroup, Intent, NonIdealState, Spinner, Switch, Tag } from "@blueprintjs/core";
+import {
+  Button,
+  FormGroup,
+  InputGroup,
+  Intent,
+  NonIdealState,
+  Spinner,
+  Switch,
+  Tag,
+} from "@blueprintjs/core";
 import { Search } from "@blueprintjs/icons";
 import { differenceBy, unionBy, without } from "lodash";
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import './App.css';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import "./App.css";
 import Results from "./Results";
 
 function App() {
-
-  const [waitTime, setWaitTime] = useState(600)
+  const [waitTime, setWaitTime] = useState(600);
   const [workingApiKey, setWorkingApiKey] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [players, setPlayers] = useState(null);
@@ -24,133 +32,155 @@ function App() {
     fetch("/players")
       .then((res) => res.json())
       .then((data) => {
-        console.log("asked server for players, got", data)
+        console.log("asked server for players, got", data);
         if (data) {
           const { players } = data;
           setPlayers(players || null);
-          setSelectedPlayers(players ? Object.values(players).map((rank) => Object.entries(rank).map(([name, id]) => ({ name, id }))).flat() : null);
-          setSelectedRanks(players ? Object.keys(players) : null)
+          setSelectedPlayers(
+            players
+              ? Object.values(players)
+                  .map((rank) =>
+                    Object.entries(rank).map(([name, id]) => ({ name, id }))
+                  )
+                  .flat()
+              : null
+          );
+          setSelectedRanks(players ? Object.keys(players) : null);
         }
       });
-  }, [])
+  }, []);
 
   useEffect(() => {
     fetch("/apiKey")
       .then((res) => res.json())
       .then((data) => {
-        console.log("asked server for api key, got", data)
+        console.log("asked server for api key, got", data);
         setApiKey(data || "");
       });
-  }, [setApiKey])
+  }, [setApiKey]);
 
   const pushApiKeyToServer = useCallback(() => {
     if (apiKey.length > 0) {
-      console.log("fetching...")
+      console.log("fetching...");
       fetch("/api", {
         headers: {
-          "Authorization": apiKey,
+          Authorization: apiKey,
         },
       })
         .then((res) => res.json())
-        .then((data) => { return data.ok });
+        .then((data) => {
+          return data.ok;
+        });
     } else {
-      return false
+      return false;
     }
-  }, [apiKey])
+  }, [apiKey]);
 
   useEffect(() => {
-    pushApiKeyToServer()
-  }, [pushApiKeyToServer])
+    pushApiKeyToServer();
+  }, [pushApiKeyToServer]);
 
   const handleChange = (event) => {
     setWorkingApiKey(event.target.value);
-  }
+  };
 
   const handleProChange = () => {
     setPro((current) => !current);
-  }
-
+  };
 
   const handleApiKeySubmit = (e) => {
-    console.log("saving", workingApiKey)
+    console.log("saving", workingApiKey);
     setApiKey(workingApiKey);
     e.preventDefault();
-  }
+  };
 
   const changeWaitTime = (e) => {
-    setWaitTime(e.target.value)
-  }
+    setWaitTime(e.target.value);
+  };
 
   const stopSearch = () => {
-    searching.current = false
-    searchFetchAbortController.abort()
-  }
+    searching.current = false;
+    searchFetchAbortController.abort();
+  };
 
   const search = useCallback(() => {
     searching.current = true;
-    setResults([])
-    selectedPlayers.map((p) => p.id).forEach(async (playerId, i) => {
-      const params = {
-        headers: {
-          "Authorization": apiKey,
-        },
-        pro,
-        playerId
-      }
-      const queryString = new URLSearchParams(params).toString()
-      // reset hashed replay IDs (for deduplication)
-      await fetch("/resetIds")
-      setTimeout(() => {
-        if (searching.current) {
-          fetch(`/search?${queryString}`, {
-            signal: abortSearchSignal,
-            headers: {
-              "Authorization": apiKey,
-            }
-          })
-            .then((res) => res.json())
-            .then(({ data, ok }) => {
-              setResults((oldList) => unionBy(oldList, data, 'id'))
-            });
-        }
-      }, 600 * i)
-    })
-  }, [abortSearchSignal, apiKey, pro, selectedPlayers])
+    setResults([]);
+    selectedPlayers
+      .map((p) => p.id)
+      .forEach(async (playerId, i) => {
+        const params = {
+          headers: {
+            Authorization: apiKey,
+          },
+          pro,
+          playerId,
+        };
+        const queryString = new URLSearchParams(params).toString();
+        // reset hashed replay IDs (for deduplication)
+        await fetch("/resetIds");
+        setTimeout(() => {
+          if (searching.current) {
+            fetch(`/search?${queryString}`, {
+              signal: abortSearchSignal,
+              headers: {
+                Authorization: apiKey,
+              },
+            })
+              .then((res) => res.json())
+              .then(({ data, ok }) => {
+                setResults((oldList) => unionBy(oldList, data, "id"));
+              });
+          }
+        }, 600 * i);
+      });
+  }, [abortSearchSignal, apiKey, pro, selectedPlayers]);
 
   const getPlayerTagIntent = (id) => {
     if (selectedPlayers && selectedPlayers.length) {
-      return selectedPlayers.find((p) => p.id === id) ? Intent.SUCCESS : Intent.NONE
+      return selectedPlayers.find((p) => p.id === id)
+        ? Intent.SUCCESS
+        : Intent.NONE;
     }
-  }
+  };
 
   const getRankIntent = (rank) => {
     if (selectedRanks && selectedRanks.length) {
-      return selectedRanks.indexOf(rank) !== -1 ? Intent.PRIMARY : Intent.DANGER
+      return selectedRanks.indexOf(rank) !== -1
+        ? Intent.PRIMARY
+        : Intent.DANGER;
     }
-  }
+  };
 
   const handlePlayerTagClick = (player) => {
     if (selectedPlayers && selectedPlayers.length) {
       if (selectedPlayers.find((p) => p.id === player.id)) {
-        setSelectedPlayers((players) => differenceBy(players, [player], 'id'))
+        setSelectedPlayers((players) => differenceBy(players, [player], "id"));
       } else {
-        setSelectedPlayers((players) => unionBy(players, [player], 'id'))
+        setSelectedPlayers((players) => unionBy(players, [player], "id"));
       }
     }
-  }
+  };
 
   const handleRankClick = (rank) => {
     if (selectedRanks && selectedRanks.length) {
-      const rankPlayers = Object.entries(players[rank]).map(([name, id]) => ({ name, id }))
+      const rankPlayers = Object.entries(players[rank]).map(([name, id]) => ({
+        name,
+        id,
+      }));
       if (selectedRanks.indexOf(rank) === -1) {
-        setSelectedRanks((ranks) => [...ranks, rank])
-        setSelectedPlayers((selectedPlayers) => unionBy(selectedPlayers, rankPlayers, 'id'))
+        setSelectedRanks((ranks) => [...ranks, rank]);
+        setSelectedPlayers((selectedPlayers) =>
+          unionBy(selectedPlayers, rankPlayers, "id")
+        );
       } else {
-        setSelectedRanks((ranks) => without(ranks, rank))
-        setSelectedPlayers((selectedPlayers) => differenceBy(selectedPlayers, rankPlayers, 'id'))
+        setSelectedRanks((ranks) => without(ranks, rank));
+        setSelectedPlayers((selectedPlayers) =>
+          differenceBy(selectedPlayers, rankPlayers, "id")
+        );
       }
     }
-  }
+  };
 
   return (
     <div className="bp5-dark">
@@ -158,8 +188,13 @@ function App() {
         {!apiKey.length && (
           <form onSubmit={handleApiKeySubmit}>
             <div>
-              <label>Enter Your Ballchasing API Key
-                <input type="text" value={workingApiKey} onChange={handleChange} />
+              <label>
+                Enter Your Ballchasing API Key
+                <input
+                  type="text"
+                  value={workingApiKey}
+                  onChange={handleChange}
+                />
               </label>
             </div>
             <div>
@@ -175,18 +210,32 @@ function App() {
               labelFor="wait-time"
               intent={Intent.DANGER}
             >
-              <InputGroup value={waitTime} onChange={changeWaitTime} id="wait-time" min={600} />
+              <InputGroup
+                value={waitTime}
+                onChange={changeWaitTime}
+                id="wait-time"
+                min={600}
+              />
             </FormGroup>
-            <FormGroup
-              label="Players to find games from"
-              labelFor="players"
-            >
+            <FormGroup label="Players to find games from" labelFor="players">
               {Object.keys(players).map((rank) => (
                 <div key={rank}>
-                  <Button intent={getRankIntent(rank)} className="rank-button" onClick={() => handleRankClick(rank)}>Rank {rank}</Button>
-                  {Object.entries(players[rank]).map(([name, id]) => <Button className="player-tag-button" key={id} onClick={() => handlePlayerTagClick({ name, id })}>
-                    <Tag intent={getPlayerTagIntent(id)}>{name}</Tag>
-                  </Button>)}
+                  <Button
+                    intent={getRankIntent(rank)}
+                    className="rank-button"
+                    onClick={() => handleRankClick(rank)}
+                  >
+                    Rank {rank}
+                  </Button>
+                  {Object.entries(players[rank]).map(([name, id]) => (
+                    <Button
+                      className="player-tag-button"
+                      key={id}
+                      onClick={() => handlePlayerTagClick({ name, id })}
+                    >
+                      <Tag intent={getPlayerTagIntent(id)}>{name}</Tag>
+                    </Button>
+                  ))}
                 </div>
               ))}
             </FormGroup>
@@ -197,13 +246,22 @@ function App() {
               <Switch onChange={handleProChange} checked={pro} id="pro" />
             </FormGroup>
             <div>
-              {!searching.current ?
-                <Button intent={Intent.SUCCESS} onClick={search}>Search</Button> :
-                <Button intent={Intent.DANGER} onClick={stopSearch}>Stop Searching</Button>
-              }
+              {!searching.current ? (
+                <Button intent={Intent.SUCCESS} onClick={search}>
+                  Search
+                </Button>
+              ) : (
+                <Button intent={Intent.DANGER} onClick={stopSearch}>
+                  Stop Searching
+                </Button>
+              )}
             </div>
             {searching.current && <Spinner />}
-            {results ? <Results results={results} /> : (!searching.current ? <NonIdealState icon={<Search />} title="No search results" /> : null)}
+            {results ? (
+              <Results results={results} />
+            ) : !searching.current ? (
+              <NonIdealState icon={<Search />} title="No search results" />
+            ) : null}
           </>
         ) : null}
       </div>
