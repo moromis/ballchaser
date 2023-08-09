@@ -12,17 +12,22 @@ const formatTitle = (r) => {
 };
 
 const Results = ({ results }) => {
-  return (
-    <ol>
-      {results.map((r, i) => (
-        <li key={r.link}>
-          <a href={formatLink(r.link)} target="_blank" rel="noreferrer">
-            {formatTitle(r)}
-          </a>
-        </li>
-      ))}
-    </ol>
-  );
+  return Object.entries(results).map(([playerName, playerResults]) => (
+    <div>
+      <h2 key={playerName}>{playerName}</h2>
+      {playerResults && playerResults.length ? (
+        <ol>
+          {playerResults.map((r) => (
+            <li key={r.link}>
+              <a href={formatLink(r.link)} target="_blank" rel="noreferrer">
+                {formatTitle(r)}
+              </a>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+    </div>
+  ));
 };
 
 export default Results;

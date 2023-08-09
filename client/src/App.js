@@ -119,41 +119,41 @@ function App() {
 
   const search = useCallback(async () => {
     searching.current = true;
-    setResults([]);
+    setResults({});
     // reset hashed replay IDs (for deduplication)
     await fetch("/resetIds");
-    selectedPlayers
-      .map((p) => p.id)
-      .forEach((playerId, i) => {
-        const params = {
-          headers: {
-            Authorization: apiKey,
-          },
-          pro,
-          playerId,
-          createdAfter: format(dateRange[0], RFC339_DATE_FORMAT),
-          createdBefore: format(
-            dateRange[1] === null ? dateRange[0] : dateRange[1],
-            RFC339_DATE_FORMAT
-          ),
-        };
-        const queryString = new URLSearchParams(params).toString();
-        const newFetch = setTimeout(() => {
-          if (searching.current) {
-            fetch(`/search?${queryString}`, {
-              signal: abortSearchSignal,
-              headers: {
-                Authorization: apiKey,
-              },
-            })
-              .then((res) => res.json())
-              .then(({ data, ok }) => {
-                setResults((oldList) => unionBy(oldList, data, "id"));
-              });
-          }
-        }, Math.max(waitTime, MINIMUM_SEARCH_INTERVAL) * i);
-        waitingFetches.current.push(newFetch);
-      });
+    selectedPlayers.forEach(({ id: playerId, name: playerName }, i) => {
+      const params = {
+        headers: {
+          Authorization: apiKey,
+        },
+        pro,
+        playerId,
+        createdAfter: format(dateRange[0], RFC339_DATE_FORMAT),
+        createdBefore: format(
+          dateRange[1] === null ? dateRange[0] : dateRange[1],
+          RFC339_DATE_FORMAT
+        ),
+      };
+      const queryString = new URLSearchParams(params).toString();
+      const newFetch = setTimeout(() => {
+        if (searching.current) {
+          fetch(`/search?${queryString}`, {
+            signal: abortSearchSignal,
+            headers: {
+              Authorization: apiKey,
+            },
+          })
+            .then((res) => res.json())
+            .then(({ data, ok }) => {
+              if (ok && data.length > 0) {
+                setResults((oldList) => ({ ...oldList, [playerName]: data }));
+              }
+            });
+        }
+      }, Math.max(waitTime, MINIMUM_SEARCH_INTERVAL) * i);
+      waitingFetches.current.push(newFetch);
+    });
   }, [
     abortSearchSignal,
     apiKey,

@@ -1,6 +1,7 @@
 const { BallChasingAPI } = require("@moromis/ballchasing");
 const { getEnvValue } = require("./apiKeyManager");
 const { loadPlayers } = require("./loadPlayers");
+const { isEmpty } = require("lodash");
 
 let bc = null;
 const seenReplayIds = new Set(); // TODO: read and write to file to store between sessions
@@ -59,8 +60,10 @@ async function search(req, res) {
       filteredData = data.list.filter((replay) => {
         if (
           seenReplayIds.has(replay.id) ||
-          replay.duration < 30 ||
+          replay.duration <= 30 ||
           replay.map_code === "labs_utopia_p" ||
+          isEmpty(replay.blue) ||
+          isEmpty(replay.orange) ||
           replay.blue.players.length + replay.orange.players.length > 4
         ) {
           return false;
