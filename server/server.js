@@ -40,8 +40,10 @@ app.get("/resetIds", async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "../client/build", "index.html"));
+app.use("/", express.static(__dirname + "../client/build"));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.resolve("../client/build/index.html"));
 });
 
 app.get("/test", function (req, res) {
