@@ -2,6 +2,16 @@
 # yarn lockfile v1
 
 
+"@moromis/ballchasing@^0.0.9":
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/@moromis/ballchasing/-/ballchasing-0.0.9.tgz#b3f02d8e6071bb73ee11693ee10242a69302884b"
+  integrity sha512-+luQRN2rHTU8VWoLafR9Wyh/JqdkZDBpC0dWYquSHP0vTpcRJdEFZAa1LCrxVS33hSiR/Mc799k/apPJ0RLjVg==
+  dependencies:
+    form-data "^3.0.1"
+    gh-pages "^3.1.0"
+    node-fetch "^2.6.1"
+    typedoc "^0.20.35"
+
 abbrev@1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/abbrev/-/abbrev-1.1.1.tgz#f8f2c887ad10bf67f634f005b6987fed3179aac8"
@@ -66,16 +76,6 @@ balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
-
-ballchasing@^0.0.7:
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/ballchasing/-/ballchasing-0.0.7.tgz#7e1c5badf0bce771dc31e879472e2a3945ee2cbc"
-  integrity sha512-G/aO886xyGQMnrxOUmZa+zBNlMM73hdUgFOi19peYzu6eo2crUX0q91ycKi4KbP2x9ck9VnQAeX+xwuqoIEpgQ==
-  dependencies:
-    form-data "^3.0.1"
-    gh-pages "^3.1.0"
-    node-fetch "^2.6.1"
-    typedoc "^0.20.35"
 
 binary-extensions@^2.0.0:
   version "2.2.0"
