@@ -111,6 +111,7 @@ function App() {
   };
 
   const stopSearch = () => {
+    console.log("stopping search");
     searching.current = false;
     searchFetchAbortController.abort();
     waitingFetches.current.forEach((f) => clearTimeout(f));
@@ -196,8 +197,12 @@ function App() {
   const handlePlayerTagClick = (player) => {
     if (selectedPlayers && selectedPlayers.length) {
       if (selectedPlayers.find((p) => p.id === player.id)) {
-        const newSelectedPlayers = differenceBy(players, [player], "id");
-        setSelectedPlayers((players) => newSelectedPlayers);
+        const newSelectedPlayers = differenceBy(
+          selectedPlayers,
+          [player],
+          "id"
+        );
+        setSelectedPlayers(newSelectedPlayers);
         if (!newSelectedPlayers.length) {
           setSelectedRanks([]);
           setErrorText("No players selected");
