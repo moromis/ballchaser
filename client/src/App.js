@@ -42,29 +42,38 @@ function App() {
   const searchFetchAbortController = new AbortController();
   const { abortSearchSignal } = searchFetchAbortController;
 
+  const selectAllPlayersAndRanks = useCallback(() => {
+    setSelectedPlayers(
+      players
+        ? Object.values(players)
+            .map((rank) =>
+              Object.entries(rank).map(([name, id]) => ({
+                name,
+                id,
+              }))
+            )
+            .flat()
+        : null
+    );
+    setSelectedRanks(players ? Object.keys(players) : null);
+  }, [players]);
+
   useEffect(() => {
-    fetch("/players")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data) {
-          const { players } = data;
-          setPlayers(players || null);
-          setSelectedPlayers(
-            players
-              ? Object.values(players)
-                  .map((rank) =>
-                    Object.entries(rank).map(([name, id]) => ({
-                      name,
-                      id,
-                    }))
-                  )
-                  .flat()
-              : null
-          );
-          setSelectedRanks(players ? Object.keys(players) : null);
-        }
-      });
-  }, []);
+    selectAllPlayersAndRanks();
+  }, [players, selectAllPlayersAndRanks]);
+
+  useEffect(() => {
+    if (players === null) {
+      fetch("/players")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data) {
+            const { players } = data;
+            setPlayers(players || {});
+          }
+        });
+    }
+  }, [players]);
 
   useEffect(() => {
     fetch("/apiKey")
@@ -152,6 +161,9 @@ function App() {
               setResults((oldList) => ({ ...oldList, [playerName]: data }));
             }
           });
+        if (i === selectedPlayers.length - 1) {
+          setSearching(false);
+        }
       }, Math.max(waitTime, MINIMUM_SEARCH_INTERVAL) * i);
       waitingFetches.current.push(newFetch);
     });
@@ -166,7 +178,7 @@ function App() {
   ]);
 
   const getPlayerTagIntent = (id) => {
-    if (selectedPlayers && selectedPlayers.length) {
+    if (selectedPlayers.length) {
       return selectedPlayers.find((p) => p.id === id)
         ? Intent.SUCCESS
         : Intent.NONE;
@@ -195,7 +207,7 @@ function App() {
   };
 
   const handlePlayerTagClick = (player) => {
-    if (selectedPlayers && selectedPlayers.length) {
+    if (selectedPlayers.length) {
       if (selectedPlayers.find((p) => p.id === player.id)) {
         const newSelectedPlayers = differenceBy(
           selectedPlayers,
@@ -246,6 +258,15 @@ function App() {
       setSelectedRanks([rank]);
       setSelectedPlayers(rankPlayers);
       setErrorText(null);
+    }
+  };
+
+  const toggleAllPlayers = () => {
+    if (selectedPlayers.length) {
+      setSelectedPlayers([]);
+      setSelectedRanks([]);
+    } else {
+      selectAllPlayersAndRanks();
     }
   };
 
@@ -307,6 +328,15 @@ function App() {
                 fill
               />
               <Collapse isOpen={playerSelectIsOpen}>
+                <Button
+                  text={
+                    selectedPlayers.length > 0 ? "Deselect all" : "Select all"
+                  }
+                  onClick={toggleAllPlayers}
+                  intent={
+                    selectedPlayers.length > 0 ? Intent.DANGER : Intent.SUCCESS
+                  }
+                />
                 {players !== null ? (
                   Object.keys(players).map((rank) => (
                     <div key={rank}>
