@@ -23,41 +23,43 @@ const Results = ({ results }) => {
       {playerResults && playerResults.length ? (
         <ol>
           {playerResults.map((r) => (
-            <li key={r.link} className="result">
-              <span className="link">
+            <li key={r.link}>
+              <div className="result">
+                <span className="link">
+                  <div>
+                    <a
+                      href={formatLink(r.link)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => clickLink(r.link)}
+                    >
+                      {formatTitle(r)}
+                    </a>
+                  </div>
+                  {clickedLinks.find((l) => l === r.link) ? (
+                    <Icon icon="tick" className="tick" />
+                  ) : null}
+                </span>
                 <div>
-                  <a
-                    href={formatLink(r.link)}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => clickLink(r.link)}
-                  >
-                    {formatTitle(r)}
-                  </a>
+                  {r?.orange?.players?.map((p) => (
+                    <Tag
+                      key={`${r.id}${p.name}`}
+                      round
+                      className="player orange-player"
+                    >
+                      {p.name}
+                    </Tag>
+                  ))}
+                  {r?.blue?.players?.map((p) => (
+                    <Tag
+                      key={`${r.id}${p.name}`}
+                      round
+                      className="player blue-player"
+                    >
+                      {p.name}
+                    </Tag>
+                  ))}
                 </div>
-                {clickedLinks.find((l) => l === r.link) ? (
-                  <Icon icon="tick" className="tick" />
-                ) : null}
-              </span>
-              <div>
-                {r?.orange?.players?.map((p) => (
-                  <Tag
-                    key={`${r.id}${p.name}`}
-                    round
-                    className="player orange-player"
-                  >
-                    {p.name}
-                  </Tag>
-                ))}
-                {r?.blue?.players?.map((p) => (
-                  <Tag
-                    key={`${r.id}${p.name}`}
-                    round
-                    className="player blue-player"
-                  >
-                    {p.name}
-                  </Tag>
-                ))}
               </div>
             </li>
           ))}
