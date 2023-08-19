@@ -1,7 +1,7 @@
 const { BallChasingAPI } = require("@moromis/ballchasing");
 const { getEnvValue } = require("./apiKeyManager");
 const { loadPlayers } = require("./loadPlayers");
-const { isEmpty } = require("lodash");
+const { isEmpty, at } = require("lodash");
 
 let bc = null;
 const seenReplayIds = new Set(); // TODO: read and write to file to store between sessions
@@ -42,6 +42,24 @@ const setup = () => {
   return players;
 };
 
+const createReplayId = (replay) => {
+  const orangePlayers = replay.orange.players;
+  const bluePlayers = replay.blue.players;
+  const playerIds = orangePlayers.concat(bluePlayers).map((p) => at(p, 'id.id'));
+  const timestamp = new Date(replay.date).toUTCString().slice(0, -7);;
+  const uniqueReplayId = (playerIds).join(".") + timestamp;
+  console.log(uniqueReplayId)
+  return uniqueReplayId;
+}
+
+const isDuplicate = (uniqueReplayId) => {
+  return seenReplayIds.has(uniqueReplayId)
+}
+
+const checkDuosOrLess = (replay) => {
+  return replay.blue.players.length + replay.orange.players.length > 4
+}
+
 async function search(req, res) {
   if (!bc) {
     await setupBallChasingApiClient(req);
@@ -54,22 +72,21 @@ async function search(req, res) {
       sortBy: "replay-date", // TODO: receive this from frontend
       sortDir: "asc", // TODO: receive this from frontend
     });
-    console.log(data);
     let filteredData = [];
     if (data.list && data.list.length) {
       filteredData = data.list.filter((replay) => {
+        const uniqueReplayId = createReplayId(replay);
         if (
-          seenReplayIds.has(replay.id) ||
-          replay.duration <= 30 ||
-          replay.map_code === "labs_utopia_p" ||
-          isEmpty(replay.blue) ||
-          isEmpty(replay.orange) ||
-          replay.blue.players.length + replay.orange.players.length > 4
+          isDuplicate(uniqueReplayId) || // duplicate replay
+          replay.duration <= 30 || // exclude replays that are less than 30 seconds
+          replay.map_code === "labs_utopia_p" || // exclude custom maps for now
+          isEmpty(replay.blue) || // blue team has no players
+          isEmpty(replay.orange) || // orange team has no players
+          checkDuosOrLess(replay)
         ) {
           return false;
         }
-        // TODO: this actually isn't good enough, need to hash match details and check. Players + datetime?
-        seenReplayIds.add(replay.id);
+        seenReplayIds.add(uniqueReplayId);
         return true;
       });
     }
