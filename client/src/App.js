@@ -14,7 +14,7 @@ import {
 } from "@blueprintjs/core";
 import { DateRangePicker } from "@blueprintjs/datetime";
 import { Search } from "@blueprintjs/icons";
-import { addDays, format, subDays } from "date-fns";
+import { endOfDay, format, startOfDay } from "date-fns";
 import { differenceBy, unionBy, without } from "lodash";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
@@ -34,8 +34,8 @@ function App() {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState(null);
   const [dateRange, setDateRange] = useState([
-    new Date(),
-    subDays(new Date(), 1),
+    startOfDay(new Date()),
+    endOfDay(new Date()),
   ]);
   const [playerSelectIsOpen, setPlayerSelectIsOpen] = useState(true);
 
@@ -53,7 +53,7 @@ function App() {
               }))
             )
             .flat()
-        : null
+        : []
     );
     setSelectedRanks(players ? Object.keys(players) : null);
   }, [players]);
@@ -112,7 +112,6 @@ function App() {
   };
 
   const handleApiKeySubmit = (e) => {
-    console.log("saving", workingApiKey);
     setApiKey(workingApiKey);
     e.preventDefault();
   };
@@ -122,7 +121,6 @@ function App() {
   };
 
   const stopSearch = () => {
-    console.log("stopping search");
     setSearching(false);
     searchFetchAbortController.abort();
     waitingFetches.current.forEach((f) => clearTimeout(f));
@@ -143,7 +141,7 @@ function App() {
         playerId,
         createdAfter: format(dateRange[0], RFC339_DATE_FORMAT),
         createdBefore: format(
-          dateRange[1] === null ? dateRange[0] : dateRange[1],
+          dateRange[1] === null ? endOfDay(dateRange[0]) : dateRange[1],
           RFC339_DATE_FORMAT
         ),
       };
@@ -199,9 +197,9 @@ function App() {
   const handleDateRangeChange = (dateRange) => {
     const formattedDates = dateRange.map((d, i) => {
       if (d !== null && i === 1) {
-        return new Date(addDays(new Date(d), 1));
+        return endOfDay(d);
       } else if (d !== null) {
-        return new Date(d);
+        return startOfDay(d);
       }
       return d;
     });
