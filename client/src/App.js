@@ -56,7 +56,6 @@ function App() {
         : []
     );
     setSelectedRanks(players ? Object.keys(players) : null);
-    console.log("Test");
   }, [players]);
 
   useEffect(() => {

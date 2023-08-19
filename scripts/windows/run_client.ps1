@@ -1,2 +1,2 @@
 echo "Starting client"
-invoke-expression 'cmd /c start powershell -Command { cd ../../client; yarn start }'
+invoke-expression 'cmd /c start powershell -noexit -Command { cd ../../client; yarn start }'
