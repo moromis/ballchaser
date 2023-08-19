@@ -274,21 +274,33 @@ function App() {
     <div className="bp5-dark">
       <div className="App">
         {!apiKey.length && (
-          <form onSubmit={handleApiKeySubmit}>
-            <div>
-              <label>
-                Enter Your Ballchasing API Key
-                <input
-                  type="text"
-                  value={workingApiKey}
-                  onChange={handleChange}
-                />
-              </label>
-            </div>
-            <div>
-              <input type="submit" value="Submit" />
-            </div>
-          </form>
+          <FormGroup
+            label="Enter Your Ballchasing API Key"
+            helperText={
+              <>
+                <a
+                  href="https://ballchasing.com/upload"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Get your API key here
+                </a>
+              </>
+            }
+          >
+            <InputGroup
+              value={workingApiKey}
+              onChange={handleChange}
+              fill
+              type="password"
+            />
+            <Button
+              text="Submit"
+              fill
+              intent={Intent.SUCCESS}
+              onClick={handleApiKeySubmit}
+            />
+          </FormGroup>
         )}
         {apiKey.length ? (
           <>

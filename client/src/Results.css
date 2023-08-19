@@ -1,3 +1,25 @@
-a {
-    color: white
+.orange-player {
+    background: orange !important;
+    color: black !important;
+}
+
+.blue-player {
+    background: #3c4ee8 !important;
+    color: white !important;
+}
+
+.link {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.tick {
+    color: greenyellow;
+    margin-left: 8px;
+}
+
+.result {
+    display: flex;
+    flex-direction: column;
 }

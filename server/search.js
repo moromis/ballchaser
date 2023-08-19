@@ -1,7 +1,7 @@
 const { BallChasingAPI } = require("@moromis/ballchasing");
 const { getEnvValue } = require("./apiKeyManager");
 const { loadPlayers } = require("./loadPlayers");
-const { isEmpty, at } = require("lodash");
+const { isEmpty, omit } = require("lodash");
 
 let bc = null;
 const seenReplayIds = new Set(); // TODO: read and write to file to store between sessions
@@ -43,11 +43,10 @@ const setup = () => {
 };
 
 const createReplayId = (replay) => {
-  const orangePlayers = replay.orange.players;
-  const bluePlayers = replay.blue.players;
-  const playerIds = orangePlayers.concat(bluePlayers).map((p) => at(p, 'id.id'));
-  const timestamp = new Date(replay.date).toUTCString().slice(0, -7);;
-  const uniqueReplayId = (playerIds).join(".") + timestamp;
+  const orangePlayers = replay.orange.players.map((p) => omit(p, "start_time", "end_time", "rank"));
+  const bluePlayers = replay.blue.players.map((p) => omit(p, "start_time", "end_time", "rank"));;
+  const playerIds = orangePlayers.concat(bluePlayers).map((p) => JSON.stringify(p));
+  const uniqueReplayId = (playerIds).join(".");
   console.log(uniqueReplayId)
   return uniqueReplayId;
 }
