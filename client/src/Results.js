@@ -26,6 +26,9 @@ const Results = ({ results }) => {
             <li key={r.link}>
               <div className="result">
                 <span className="link">
+                  {clickedLinks.find((l) => l === r.link) ? (
+                    <Icon icon="tick" className="tick" />
+                  ) : null}
                   <div>
                     <a
                       href={formatLink(r.link)}
@@ -36,9 +39,6 @@ const Results = ({ results }) => {
                       {formatTitle(r)}
                     </a>
                   </div>
-                  {clickedLinks.find((l) => l === r.link) ? (
-                    <Icon icon="tick" className="tick" />
-                  ) : null}
                 </span>
                 <div>
                   {r?.orange?.players?.map((p) => (
