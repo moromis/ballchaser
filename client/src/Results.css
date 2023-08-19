@@ -1,3 +1,7 @@
+.player {
+    margin-right: 4px;
+}
+
 .orange-player {
     background: orange !important;
     color: black !important;
@@ -22,4 +26,5 @@
 .result {
     display: flex;
     flex-direction: column;
+    margin-bottom: 16px;
 }

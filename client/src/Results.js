@@ -23,8 +23,8 @@ const Results = ({ results }) => {
       {playerResults && playerResults.length ? (
         <ol>
           {playerResults.map((r) => (
-            <React.Fragment key={r.link} className="result">
-              <li className="link">
+            <li key={r.link} className="result">
+              <span className="link">
                 <div>
                   <a
                     href={formatLink(r.link)}
@@ -38,20 +38,28 @@ const Results = ({ results }) => {
                 {clickedLinks.find((l) => l === r.link) ? (
                   <Icon icon="tick" className="tick" />
                 ) : null}
-              </li>
+              </span>
               <div>
                 {r?.orange?.players?.map((p) => (
-                  <Tag key={`${r.id}${p.name}`} round className="orange-player">
+                  <Tag
+                    key={`${r.id}${p.name}`}
+                    round
+                    className="player orange-player"
+                  >
                     {p.name}
                   </Tag>
                 ))}
                 {r?.blue?.players?.map((p) => (
-                  <Tag key={`${r.id}${p.name}`} round className="blue-player">
+                  <Tag
+                    key={`${r.id}${p.name}`}
+                    round
+                    className="player blue-player"
+                  >
                     {p.name}
                   </Tag>
                 ))}
               </div>
-            </React.Fragment>
+            </li>
           ))}
         </ol>
       ) : null}
