@@ -131,7 +131,7 @@ function App() {
 
   const search = useCallback(async () => {
     setSearching(true);
-    setResults({});
+    setResults(null);
     // reset hashed replay IDs (for deduplication)
     await fetch("/resetIds");
     selectedPlayers.forEach(({ id: playerId, name: playerName }, i) => {
@@ -160,10 +160,12 @@ function App() {
             if (ok && data.length > 0) {
               setResults((oldList) => ({ ...oldList, [playerName]: data }));
             }
+          })
+          .finally(() => {
+            if (i === selectedPlayers.length - 1) {
+              setSearching(false);
+            }
           });
-        if (i === selectedPlayers.length - 1) {
-          setSearching(false);
-        }
       }, Math.max(waitTime, MINIMUM_SEARCH_INTERVAL) * i);
       waitingFetches.current.push(newFetch);
     });
@@ -315,7 +317,6 @@ function App() {
                 allowSingleDayRange={true}
                 onChange={handleDateRangeChange}
                 value={dateRange}
-                selectedShortcutIndex={0}
               />
             </FormGroup>
             <FormGroup label="Players to find games from" labelFor="players">
