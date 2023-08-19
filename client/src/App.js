@@ -3,6 +3,7 @@
 import {
   Button,
   Classes,
+  Collapse,
   FormGroup,
   InputGroup,
   Intent,
@@ -30,12 +31,13 @@ function App() {
   const [pro, setPro] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [selectedRanks, setSelectedRanks] = useState(null);
-  const searching = useRef(false);
+  const [searching, setSearching] = useState(false);
   const [results, setResults] = useState(null);
   const [dateRange, setDateRange] = useState([
     new Date(),
     subDays(new Date(), 1),
   ]);
+  const [playerSelectIsOpen, setPlayerSelectIsOpen] = useState(true);
 
   const searchFetchAbortController = new AbortController();
   const { abortSearchSignal } = searchFetchAbortController;
@@ -112,14 +114,14 @@ function App() {
 
   const stopSearch = () => {
     console.log("stopping search");
-    searching.current = false;
+    setSearching(false);
     searchFetchAbortController.abort();
     waitingFetches.current.forEach((f) => clearTimeout(f));
     waitingFetches.current = [];
   };
 
   const search = useCallback(async () => {
-    searching.current = true;
+    setSearching(true);
     setResults({});
     // reset hashed replay IDs (for deduplication)
     await fetch("/resetIds");
@@ -138,20 +140,18 @@ function App() {
       };
       const queryString = new URLSearchParams(params).toString();
       const newFetch = setTimeout(() => {
-        if (searching.current) {
-          fetch(`/search?${queryString}`, {
-            signal: abortSearchSignal,
-            headers: {
-              Authorization: apiKey,
-            },
-          })
-            .then((res) => res.json())
-            .then(({ data, ok }) => {
-              if (ok && data.length > 0) {
-                setResults((oldList) => ({ ...oldList, [playerName]: data }));
-              }
-            });
-        }
+        fetch(`/search?${queryString}`, {
+          signal: abortSearchSignal,
+          headers: {
+            Authorization: apiKey,
+          },
+        })
+          .then((res) => res.json())
+          .then(({ data, ok }) => {
+            if (ok && data.length > 0) {
+              setResults((oldList) => ({ ...oldList, [playerName]: data }));
+            }
+          });
       }, Math.max(waitTime, MINIMUM_SEARCH_INTERVAL) * i);
       waitingFetches.current.push(newFetch);
     });
@@ -294,33 +294,44 @@ function App() {
                 allowSingleDayRange={true}
                 onChange={handleDateRangeChange}
                 value={dateRange}
+                selectedShortcutIndex={0}
               />
             </FormGroup>
             <FormGroup label="Players to find games from" labelFor="players">
-              {players !== null ? (
-                Object.keys(players).map((rank) => (
-                  <div key={rank}>
-                    <Button
-                      intent={getRankIntent(rank)}
-                      className="rank-button"
-                      onClick={() => handleRankClick(rank)}
-                    >
-                      Rank {rank}
-                    </Button>
-                    {Object.entries(players[rank]).map(([name, id]) => (
+              <Button
+                onClick={() => {
+                  setPlayerSelectIsOpen((prev) => !prev);
+                }}
+                text={playerSelectIsOpen ? "Hide Players" : "Show Players"}
+                icon="chevron-down"
+                fill
+              />
+              <Collapse isOpen={playerSelectIsOpen}>
+                {players !== null ? (
+                  Object.keys(players).map((rank) => (
+                    <div key={rank}>
                       <Button
-                        className="player-tag-button"
-                        key={id}
-                        onClick={() => handlePlayerTagClick({ name, id })}
+                        intent={getRankIntent(rank)}
+                        className="rank-button"
+                        onClick={() => handleRankClick(rank)}
                       >
-                        <Tag intent={getPlayerTagIntent(id)}>{name}</Tag>
+                        Rank {rank}
                       </Button>
-                    ))}
-                  </div>
-                ))
-              ) : (
-                <Spinner />
-              )}
+                      {Object.entries(players[rank]).map(([name, id]) => (
+                        <Button
+                          className="player-tag-button"
+                          key={id}
+                          onClick={() => handlePlayerTagClick({ name, id })}
+                        >
+                          <Tag intent={getPlayerTagIntent(id)}>{name}</Tag>
+                        </Button>
+                      ))}
+                    </div>
+                  ))
+                ) : (
+                  <Spinner />
+                )}
+              </Collapse>
             </FormGroup>
             <FormGroup
               label="Only show games with pros in them?"
@@ -329,7 +340,7 @@ function App() {
               <Switch onChange={handleProChange} checked={pro} id="pro" />
             </FormGroup>
             <div>
-              {!searching.current ? (
+              {!searching ? (
                 <FormGroup
                   helperText={errorText}
                   labelFor="search-button"
@@ -350,10 +361,10 @@ function App() {
                 </Button>
               )}
             </div>
-            {searching.current && <Spinner />}
+            {searching ? <Spinner /> : null}
             {results ? (
               <Results results={results} />
-            ) : !searching.current ? (
+            ) : !searching ? (
               <NonIdealState icon={<Search />} title="No search results" />
             ) : null}
           </>
